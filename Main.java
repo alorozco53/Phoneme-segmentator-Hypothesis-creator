@@ -21,6 +21,7 @@ public class Main extends AgentImpl{
     
     public static final int EOFERROR = -123456;
     public static final String AGENT_NAME = "PhonemeLearnAgent";
+    public static int shyte = 98948;
 
     /** Default constructor */
     public Main() {
