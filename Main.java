@@ -21,7 +21,6 @@ public class Main extends AgentImpl{
     
     public static final int EOFERROR = -123456;
     public static final String AGENT_NAME = "PhonemeLearnAgent";
-    public static int shyte = 98948;
 
     /** Default constructor */
     public Main() {
@@ -179,7 +178,7 @@ public class Main extends AgentImpl{
         boolean result=false;
         String[] expectativas;
                 
-        if(goal.toIdentifyingString().equals("interpretaVoz")) {
+        if(goal.toIdentifyingString().equals("learnPhonemes")) {
             String Cadena1;// expectativa que se espera
             String Cadena2;// cadena que el usuario entiend
             String Cadena3;// el retorno del resultado
