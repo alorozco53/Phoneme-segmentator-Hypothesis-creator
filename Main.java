@@ -88,6 +88,8 @@ public class Main extends AgentImpl{
 		n = in.nextInt();
 		ok = false;
 	    } catch(InputMismatchException e) {
+		while (System.in.read() != -1)
+		    continue;
 	    } catch(NoSuchElementException e) {
 		return EOFERROR;
 	    }
@@ -177,67 +179,60 @@ public class Main extends AgentImpl{
     public boolean oaaDoEventCallback(IclTerm goal, IclList params, IclList answers) {
         boolean result=false;
         String[] expectativas;
-                
         if(goal.toIdentifyingString().equals("learnPhonemes")) {
             String Cadena1;// expectativa que se espera
             String Cadena2;// cadena que el usuario entiend
             String Cadena3;// el retorno del resultado
             String Id; //mamada de programacion
-
-            if(goal.size()==3){
-                Cadena1 = goal.iclNthTerm(1).iclStr();
-                Cadena2 = goal.iclNthTerm(2).iclStr();
-                Cadena3 = goal.iclNthTerm(3).iclStr();
-
-
+	    if(goal.size()==3){
+		Cadena1 = goal.getTerm(1).toIdentifyingString();
+                Cadena2 = goal.getTerm(2).toIdentifyingString();
+                Cadena3 = goal.getTerm(3).toIdentifyingString();
                 System.out.println("La Cadena1  recibida MD3: "+goal);
                 System.out.println("La Cadena1  recibida MD3: "+Cadena1);
                 System.out.println("Lo que viene del reconocedor de voz: "+Cadena2);
                 Id = null;
             }else{
-                Cadena1 = goal.iclNthTerm(1).iclStr();
-                Id = goal.iclNthTerm(2).iclStr();
-                Cadena2 = goal.iclNthTerm(3).iclStr();
-                Cadena3 = goal.iclNthTerm(4).iclStr();
+                Cadena1 = goal.getTerm(1).toIdentifyingString();
+                Id = goal.getTerm(2).iclStr();
+                Cadena2 = goal.getTerm(3).toIdentifyingString();
+                Cadena3 = goal.getTerm(4).toIdentifyingString();
                 System.out.println("La Cadena1  recibida MD4: "+goal);
                 System.out.println("La Cadena1  recibida MD4: "+Cadena1);
                 System.out.println("Id: "+Id);
                 System.out.println("Lo que viene del reconocedor de voz: "+Cadena2);
             }
-
-			String [] Cadena=Cadena1.split("\\[|\\]");
-			String cadena1=Cadena[1];
-			System.out.println("Predicates: "+cadena1);
-                        System.out.println("Expresion: "+Cadena2);
-			System.out.flush();
-			try {
-                                
-                                texto = WordSpotting.leer(prop);//convierte el archivo lo crea en una sola cadena
-                                predInt = WordSpotting.separadorDePredicadosIntenciones(texto);//separa la cadena texto en varias cadenas por predicado
-                                mapaDePredicados = WordSpotting.mapaDeIntenciones(predInt,mapaDeArgumentos); //convertimos cada cadena del predicado en un mapa con la estructura (predicado,expresiones regulares), el mapa de argumentos es modificado y no es retornado en el metodo          
-                                mapaDeValores=WordSpotting.mapaPorCampos(mapaDePredicados); //a partir del mapa de intenciones creamos un nuevo mapa en con la siguiente estructura (predicado,mapa) nota: el mapa seran todas las expresiones regulares con su valor correspondiente
-                                args_usuario = WordSpotting.ObtenerposicionArg(cadena1);
-                                expectativas = cadena1.split(",");
-                                for(String exp: expectativas){
-                                    res = WordSpotting.buscarConExp(WordSpotting.ObtenerPredicado(cadena1),args_usuario,mapaDeArgumentos,Cadena2,mapaDeValores);                                                                    
-                                    
-                                    if(!res.equals("noEntendi")){
-                                            IclTerm answer;
-                                            if(Id == null)
-                                                 answer = new IclStruct("interpretaVoz", IclTerm.fromString(Cadena1), new IclStr(Cadena2),IclTerm.fromString(res));
-                                            else
-                                                 answer = new IclStruct("interpretaVoz", IclTerm.fromString(Cadena1), new IclStr(Id), new IclStr(Cadena2),IclTerm.fromString(res));
-                                                                    //Add our answers to the list of answers
-                                            answers.add(answer);
-                                            System.out.println("INTENTION: "+res);
-                                            MEMORIA = Cadena2; // Keep the last recognised phrase
-                                            result = true;//return true to indicate success
-                                    }
-                                }
-			}catch(Exception ex) {
-				getLogger().error("Failed to add",ex);
-			}
+	    String [] Cadena=Cadena1.split("\\[|\\]");
+	    String cadena1=Cadena[1];
+	    System.out.println("Predicates: "+cadena1);
+	    System.out.println("Expresion: "+Cadena2);
+	    System.out.flush();
+	    try {
+		texto = WordSpotting.leer(prop);//convierte el archivo lo crea en una sola cadena
+		predInt = WordSpotting.separadorDePredicadosIntenciones(texto);//separa la cadena texto en varias cadenas por predicado
+		mapaDePredicados = WordSpotting.mapaDeIntenciones(predInt,mapaDeArgumentos); //convertimos cada cadena del predicado en un mapa con la estructura (predicado,expresiones regulares), el mapa de argumentos es modificado y no es retornado en el metodo          
+		mapaDeValores=WordSpotting.mapaPorCampos(mapaDePredicados); //a partir del mapa de intenciones creamos un nuevo mapa en con la siguiente estructura (predicado,mapa) nota: el mapa seran todas las expresiones regulares con su valor correspondiente
+		args_usuario = WordSpotting.ObtenerposicionArg(cadena1);
+		expectativas = cadena1.split(",");
+		for(String exp: expectativas){
+		    res = WordSpotting.buscarConExp(WordSpotting.ObtenerPredicado(cadena1),args_usuario,mapaDeArgumentos,Cadena2,mapaDeValores);
+		    if(!res.equals("noEntendi")){
+			IclTerm answer;
+			if(Id == null)
+			    answer = new IclStruct("interpretaVoz", IclTerm.fromString(Cadena1), new IclStr(Cadena2),IclTerm.fromString(res));
+			else
+			    answer = new IclStruct("interpretaVoz", IclTerm.fromString(Cadena1), new IclStr(Id), new IclStr(Cadena2),IclTerm.fromString(res));
+			//Add our answers to the list of answers
+			answers.add(answer);
+			System.out.println("INTENTION: "+res);
+			MEMORIA = Cadena2; // Keep the last recognised phrase
+			result = true;//return true to indicate success
+		    }
 		}
-		return result;
+	    }catch(Exception ex) {
+		getLogger().error("Failed to add",ex);
+	    }
 	}
+	return result;
+    }
 }
