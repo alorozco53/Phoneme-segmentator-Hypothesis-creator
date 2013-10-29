@@ -2,7 +2,7 @@
  * This class creates an exception that will help to handle situations
  * where the program cannot match a string with any phoneme included in the 'phoneme.phone' file.
  * (i.e. When constructing on object of the Phoneme class)
- * @author Albert Manuel Orozco Camacho
+ * @author alorozco53
  * @version 09.2.25.13
  */
 public class PhonemeNotFoundException extends Exception {
