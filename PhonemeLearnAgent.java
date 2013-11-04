@@ -19,9 +19,15 @@ import com.sri.oaa2.agentlib.*;
  */
 public class PhonemeLearnAgent extends AgentImpl {
     
+    public static int reps;
+    public static String phdict;
+    public static Hypotheses h = null;
+    public static String[] arguments;
+    public static LinkedList<String> db = null;
+    public static LinkedList<Vector> prevDB = null;
+    public static boolean interactive = false;
     public static final int EOFERROR = -123456;
     public static final String AGENT_NAME = "PhonemeLearnAgent";
-    public static boolean interactive = false;
 
     /** Default constructor */
     public PhonemeLearnAgent() {
@@ -34,7 +40,7 @@ public class PhonemeLearnAgent extends AgentImpl {
      * @param phdict -- phoneme dictionary
      * @return Phoneme[] -- array of all found phonemes
      */
-    public static Phoneme[] readPhonemes(String stream, String phdict) {
+    public static Phoneme[] readPhonemes(String stream) {
 	Phoneme[] array = null;
 	int counter = 0;
 	// the following loop avoids the use of a list for this method
@@ -99,8 +105,8 @@ public class PhonemeLearnAgent extends AgentImpl {
     }
     
     private static Vector readParams(String[] args, LinkedList<String> db) {
-	int reps = -1;
-	String phone = "";
+	reps = -1;
+	phdict = "";
 	Vector v = new Vector(2);
 	try {
 	    for(int i = 0; i < args.length; i++) {
@@ -134,17 +140,15 @@ public class PhonemeLearnAgent extends AgentImpl {
 	return v;
     }
     
-    public static int work(LinkedList<String> db, int reps, String phdict) {
+    public static void work() {
 	int reinforcement = 1;
 	Scanner scan = new Scanner(System.in);
 	String stream = "", hyp = ""; //input stream
-	Hypotheses h = null;
 	Vector v = new Vector(2);
-	LinkedList<Vector> prevDB = null;
 	try {
 	    for(int i = 0; !(stream = scan.nextLine().trim()).equalsIgnoreCase("end") && i < reps; i++) {
 		if(stream.equals("")) {continue;}
-		h = new Hypotheses(readPhonemes(stream,args.length>2 ? args[3] : phdict),prevDB,i+1);
+		h = new Hypotheses(readPhonemes(stream),prevDB,i+1);
 		do {
 		    System.out.println("Golem says: "+(hyp = h.emitHyp(hyp)));
 		    reinforcement = validateInput();
@@ -184,23 +188,21 @@ public class PhonemeLearnAgent extends AgentImpl {
 	    if(db.get(y) != null)
 		System.out.println((String)db.get(y));
 	}
-	
     }
 
     /** Main method */
     public static void main(String[] args) {
 	Vector v = new Vector(2);
-	LinkedList<String> db = null;
-	if(interactive) {
-	    v = readParams(args,db);
+	arguments = args;
+	v = readParams(args,db);
+	if(interactive)
 	    work(db,v.elementAt(0),v.elementAt(1));
-	} else {
+	else {
 	    try {
-		Agent agent = new Phoneme();
+		Agent agent = new PhonemeLearnAgent();
 		agent.facilitatorConnect(args);
 		agent.start();
-	    }
-	    catch (AgentException ex) {
+	    } catch(AgentException ex) {
 		System.err.println("Failed to start PhonemeLearnAgent");
 		ex.printStackTrace();
 		System.exit(1);
@@ -212,16 +214,47 @@ public class PhonemeLearnAgent extends AgentImpl {
     /* OAA Methods */
 
     public String getAgentCapabilities() {
-        return "[learnPhonemes(phonemeStream, CANDIDATES), learnPhonemes(reinforcement, RESULT)]";
+        return "[identifyPhonemes(phonemeStream, CANDIDATE), reinforce(reinforcement, RESULT)]";
     }
     
     public String getAgentName() {
         return AGENT_NAME;
     }
     
-    public boolean oaaDoEventCallback(IclTerm goal, IclList params, IclList answers) {
-	String request = goal.toIdentifyingString();
-	if(request.get(0) == 'S') {
-	    oaaWork(
+    public String oaaIdentify(String stream) throws Exception {
+	String hyp;
+	if(stream.equals("")) {throw new Exception("Invalid stream of phonemes.");}
+	h = new Hypotheses(readPhonemes(stream),prevDB,i+1);
+	System.out.println("Golem says: "+(hyp = h.emitHyp(hyp)));
+	return hyp;
+    }
+	
+
+    public static boolean oaaDoEventCallback(IclTerm goal, IclList params, IclList answers) {
+	if(goal.toItentifyingString().equals("identifyPhonemes")) {
+	    IclTerm phonemeStream = goal.getTerm(0);
+	    try {
+		String stream = phonemeStream.toString(), candidate;
+		candidate = oaaIdentify(stream);
+		IclTerm answer = new IclStruct("identifyPhonemes",(IclTerm)stream.clone(),new IclTerm(candidate));
+		answers.add(answer);
+	    } catch(Exception ex) {
+                getLogger().error("Failed to add", ex);
+	    }
+	}
+	if(goal.toItentifyingString().equals("reinforce")) {
+	    IclTerm reinforcement = goal.getTerm(0);
+	    try {
+		int reinf = ToInt.getInstance().from(reinforcement), result;
+		result = oaaReinforce(reinf);
+		IclTerm answer = new IclStruct("reinforce",(IclTerm)reinforcement.clone(),new IclInt(result));
+		answers.add(answer);
+	    } catch(Exception ex) {
+                getLogger().error("Failed to add", ex);
+	    }  catch (Exception ex) {
+	        throw new AgentException("Not a number: " + term.toIdentifyingString(), ex);
+	    }
+	}		
+	return true;
     }
 }
