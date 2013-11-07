@@ -228,14 +228,54 @@ public class PhonemeLearnAgent extends AgentImpl {
 	System.out.println("Golem says: "+(hyp = h.emitHyp(hyp)));
 	return hyp;
     }
-	
+    
+    public String oaaReinforce(int reinforcement) {
+	Vector v = new Vector(2);
+	String hyp = ""; //input stream
+	try {
+	    if(reinforcement == EOFERROR) {break;}
+	    if(reinforcement != 1 && reinforcement != EOFERROR) {
+		if(h.prevDatabase.isEmpty()) {
+		    v.add(0,hyp);
+		    v.add(1,h.getScore(hyp));
+		    h.prevDatabase.add(v);
+		} else {
+		    for(int a = 0; a < h.prevDatabase.size(); a++) {
+			if(((String)h.prevDatabase.get(a).get(0)).equals(hyp))
+			    break;
+			if(a+1 == h.prevDatabase.size()) {
+			    v.add(0,hyp);
+			    v.add(1,h.getScore(hyp));
+			    h.prevDatabase.add(v);
+			    break;
+			}
+		    }
+		}
+
+	    }
+	    h.reinforce(hyp);
+	    System.out.println("Golem has reinforced the word '"+hyp+"'\n---------------------------------------------------------------------");
+	    db.add(hyp);
+	    prevDB = h.prevDatabase;
+	} catch(Exception e) {}
+	System.out.println("Golem says: "+(hyp = h.emitHyp(hyp)));
+	return hyp;
+    }
 
     public static boolean oaaDoEventCallback(IclTerm goal, IclList params, IclList answers) {
+	public static int reps;
+	public static String phdict;
+	public static Hypotheses h = null;
+	public static String[] arguments;
+	public static LinkedList<String> db = null;
+	public static LinkedList<Vector> prevDB = null;
+	public static boolean interactive = false;
+	public static final int EOFERROR = -123456;
+	public static final String AGENT_NAME = "PhonemeLearnAgent";
 	if(goal.toItentifyingString().equals("identifyPhonemes")) {
 	    IclTerm phonemeStream = goal.getTerm(0);
 	    try {
-		String stream = phonemeStream.toString(), candidate;
-		candidate = oaaIdentify(stream);
+		String stream = phonemeStream.toString(), candidate = oaaIdentify(stream);
 		IclTerm answer = new IclStruct("identifyPhonemes",(IclTerm)stream.clone(),new IclTerm(candidate));
 		answers.add(answer);
 	    } catch(Exception ex) {
@@ -245,16 +285,20 @@ public class PhonemeLearnAgent extends AgentImpl {
 	if(goal.toItentifyingString().equals("reinforce")) {
 	    IclTerm reinforcement = goal.getTerm(0);
 	    try {
-		int reinf = ToInt.getInstance().from(reinforcement), result;
-		result = oaaReinforce(reinf);
-		IclTerm answer = new IclStruct("reinforce",(IclTerm)reinforcement.clone(),new IclInt(result));
+		int reinf = ToInt.getInstance().from(reinforcement);
+		String result = oaaReinforce(reinf);
+		IclTerm answer = new IclStruct("reinforce",(IclTerm)reinforcement.clone(),new IclTerm(result));
 		answers.add(answer);
+	    }  catch(EOFException ex) {
+		System.out.println("Learned words:");
+		for(int y = 0; y < db.size(); y++) {
+		    if(db.get(y) != null)
+			System.out.println((String)db.get(y));
+		}
 	    } catch(Exception ex) {
                 getLogger().error("Failed to add", ex);
-	    }  catch (Exception ex) {
-	        throw new AgentException("Not a number: " + term.toIdentifyingString(), ex);
-	    }
-	}		
-	return true;
+	    }		
+	    return true;
+	}
     }
 }
